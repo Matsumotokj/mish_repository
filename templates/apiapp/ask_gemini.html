@@ -3,7 +3,7 @@
 
 <h1>Geminiが問題を作成するページ</h1>
 
-<form method="POST">
+<form method="POST" id="generation-form">
     {% csrf_token %}
     <div style="margin-bottom: 15px;">
         <label for="prompt" style="font-weight: bold;">どのような文章にしますか？（内容）</label><br>

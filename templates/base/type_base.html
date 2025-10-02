@@ -19,17 +19,64 @@
 
 
     <body>
+        <div id="loading-overlay" class="loading-overlay">
+            <div class="spinner"></div>
+            <p id="loading-message" class="loading-message">処理中...</p>
+        </div>
 
-        <div class="container"> {# ★ここを追加しました！ #}
+        <div class="container">
             <h1 style="text-align: center; margin-bottom: 20px;"><a href="{% url 'typeApp:top' %}" style="text-decoration: none; color: #2c3e50;">トップページへ</a></h1>
             {# 上のh1は、body直下でなくcontainer内に入れる方がCSSが適用しやすい。スタイルは一時的に直接指定。 #}
 
             {% block body %}
             {% endblock %}
-        </div> {# ★ここを追加しました！ #}
+        </div>
 
         {# ここに practice.html の extra_js ブロックの中身が挿入される #}
         {% block extra_js %}
         {% endblock %}       
+
+        <!-- ★★★ 待機画面を制御するJavaScriptを追加 ★★★ -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const loadingOverlay = document.getElementById('loading-overlay');
+                const loadingMessage = document.getElementById('loading-message');
+
+                // --- 文章生成フォームの待機画面 ---
+                // ask_gemini.htmlのフォームに id="generation-form" を追加する必要があります
+                const generationForm = document.getElementById('generation-form');
+                if (generationForm) {
+                    generationForm.addEventListener('submit', function() {
+                        loadingMessage.textContent = '文章を生成しています...';
+                        loadingOverlay.classList.add('show');
+                    });
+                }
+
+                // --- 採点フォームの待機画面 ---
+                // practice.htmlのフォームに id="result-form" があることを想定
+                const resultForm = document.getElementById('result-form');
+                if (resultForm) {
+                    resultForm.addEventListener('submit', function() {
+                        // 採点ボタンが無効化されていたら何もしない（完了済みのため）
+                        const submitButton = document.getElementById('submit-button');
+                        if (submitButton && submitButton.disabled) {
+                            return;
+                        }
+                        loadingMessage.textContent = '採点しています...';
+                        loadingOverlay.classList.add('show');
+                    });
+                }
+            });
+
+            // ページが表示されるたびに（「戻る」ボタンで戻ってきた場合も含む）実行
+            window.addEventListener('pageshow', function(event) {
+                // event.persistedがtrueの場合、ページはbfcacheから復元されたことを意味します
+                const loadingOverlay = document.getElementById('loading-overlay');
+                if (loadingOverlay && loadingOverlay.classList.contains('show')) {
+                    // もし待機画面が表示されたままなら、強制的に非表示にする
+                    loadingOverlay.classList.remove('show');
+                }
+            });
+        </script>
     </body>
 </html>
