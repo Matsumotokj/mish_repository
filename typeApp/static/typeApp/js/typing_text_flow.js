@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentPhraseIndex = 0; // 現在表示しているフレーズのインデックスを管理する変数
 
     const mainAudioPlayer = document.getElementById('main-audio-player'); // ★追加: オーディオプレーヤーの取得
-    const userInputArea = document.getElementById('user-input-area');     // ★追加 (HTMLに存在すると仮定)
+    const userInputArea = document.getElementById('user-input');     // ★追加 (HTMLに存在すると仮定)
     const submitButton = document.getElementById('submit-button');       // ★追加 (HTMLに存在すると仮定)
     const playbackMode = phrasesDisplayContainer.dataset.playbackMode;
     const manualNextInstruction = document.getElementById('manual-next-instruction');
@@ -128,7 +128,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         displayCurrentPhrase(); // 最初のフレーズのテキストと音声を再生
 
-        if (userInputArea) userInputArea.focus(); // 練習開始と同時に入力欄にフォーカスを当てる
+        console.log("userInputArea:",userInputArea);
+        if (userInputArea){
+            userInputArea.focus(); // 練習開始と同時に入力欄にフォーカスを当てる
+        }
         
         // 初回スタート時のキーイベントリスナーは不要になるので削除
         document.removeEventListener('keydown', handleStartKey);
@@ -138,7 +141,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // 7. 初回再生をキー入力で開始するためのイベントリスナー
     // ----------------------------------------------------------------
     function handleStartKey(event) {
-        if (((event.ctrlKey || event.metaKey) && event.code === 'Enter') && !isPracticeStarted) {
+        // if (((event.ctrlKey || event.metaKey) && event.code === 'Enter') && !isPracticeStarted) {
+        if ((event.code === 'Space' || event.code === 'Enter') && !isPracticeStarted) {
             event.preventDefault(); 
             console.log("練習をキー入力で開始します。");
             startPractice(); // 練習開始処理を呼び出す
