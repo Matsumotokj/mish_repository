@@ -12,12 +12,11 @@
         <audio id="main-audio-player" controls style="display: none;">
             お使いのブラウザは音声要素をサポートしていません。
         </audio>
-        <button id="play-next-phrase" style="display: none;">次のフレーズ</button> {# デバッグ用、または手動再生用 #}
     </div>
 
 
     <div id="start-message" style="text-align: center; margin-top: 50px;">
-        <p style="font-size: 1.8em; font-weight: bold;">スペースキーまたはエンターキーを押して開始</p>
+        <p style="font-size: 1.8em; font-weight: bold;">Ctrl + Enterを押して開始</p>
         <p style="font-size: 1.2em; color: #666;">（最初のフレーズが表示され、音声が再生されます）</p>
     </div>
 
@@ -40,7 +39,7 @@
         {% csrf_token %}
         
         {# ★★★ views.pyから渡されたフォーム（textarea）を描画 ★★★ #}
-        <div id="user-input-form-container" style="display: none;">
+        <div id="user-input-form-container" style="display: block;">
             {{ form.as_p }}
         </div>
         
