@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const userInputArea = document.getElementById('user-input-area');     // ★追加 (HTMLに存在すると仮定)
     const submitButton = document.getElementById('submit-button');       // ★追加 (HTMLに存在すると仮定)
     const playbackMode = phrasesDisplayContainer.dataset.playbackMode;
+    const manualNextInstruction = document.getElementById('manual-next-instruction');
 
     // ★新規追加: 音声再生速度のデフォルト設定
     const DEFAULT_PLAYBACK_RATE = 1.0; // 1.0 = 標準速度, 0.8 = 80%, 1.2 = 120%
@@ -49,6 +50,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitButton.style.display = 'block';
             }
 
+            manualNextInstruction.classList.remove('visible');
+
             return; // ここで関数を終了
         }
 
@@ -58,6 +61,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // 取得したフレーズのテキストをそのままコンテナに表示
         // この段階ではまだ1文字ずつの<span>要素にはしません
         phrasesDisplayContainer.textContent = currentPhraseData.text;
+
+        manualNextInstruction.classList.remove('visible');
 
         if(currentPhraseData.audio_url){
             mainAudioPlayer.src = currentPhraseData.audio_url;
@@ -120,8 +125,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // 手動再生
             // 手動モードの場合は音声が終了したことを記録
             audioHasEnded = true;
-            console.log("手動モード：エンターキーで次に進んでください。c");
-            
+            if (playbackMode === 'manual' && !isAllAudioPlayed) {
+                manualNextInstruction.classList.add('visible'); // ★追加：手動モードで音声終了時に案内を表示
+            }
         }
         // ★★★ ここまで追加/変更 ★★★
     });

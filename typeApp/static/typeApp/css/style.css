@@ -293,3 +293,34 @@ button#submit-button:active {
     color: #2c3e50;
 }
 
+/* ========================================================================
+   Instruction Box (案内ボックス)
+   ======================================================================== */
+.instruction-box {
+    text-align: center;
+    margin-top: 20px;
+    padding: 10px 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    color: #495057;
+    font-size: 0.9em;
+    font-style: italic;
+
+    /* レイアウトシフト対策 */
+    min-height: 1.2em; /* テキスト1行分の高さを確保 */
+    visibility: hidden; /* 見えなくするが、スペースは確保 */
+    opacity: 0;         /* 透明にする */
+    transition: opacity 0.3s ease, visibility 0s 0.3s;
+}
+
+.instruction-box.visible {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.instruction-box p {
+    margin: 0;
+}
+
