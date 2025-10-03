@@ -57,9 +57,11 @@ class PracticeView(View):
                 continue
             
             #ユニークな音声ファイル名を作成audio_1とかにpart付けされる
-            audio_filename = f"audio_{uuid.uuid4().hex}_{i}.mp3"
+            # audio_filename = f"audio_{uuid.uuid4().hex}_{i}.mp3"
+            audio_filename = f"audio_sample_{i}.mp3"
+            returned_filename = audio_filename
 
-            returned_filename = generate_mp3_from_text(phrase_text, audio_filename, settings.MEDIA_ROOT, speaking_rate)
+            # returned_filename = generate_mp3_from_text(phrase_text, audio_filename, settings.MEDIA_ROOT, speaking_rate)
             
             if returned_filename:
                 audio_url = os.path.join(settings.MEDIA_URL, returned_filename)
@@ -106,7 +108,9 @@ practice = PracticeView.as_view()
 class ResultView(View):
     def post(self, request):
 
-        user_input = request.POST.get('user_input', '')
+        # user_input = request.POST.get('user-input', '')
+        user_input = request.POST.get('text', '')
+
 
         # print(user_input)
 

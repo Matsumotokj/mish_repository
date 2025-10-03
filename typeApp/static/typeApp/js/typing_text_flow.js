@@ -42,9 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log("全てのフレーズが完了しました。");
             isAllAudioPlayed = true; // フラグを立てる
 
-            // ★全ての音声再生が完了したら、デバッグ用のボタンも非表示にする
-            const nextButton = document.getElementById('next-phrase-button');
-            if (nextButton) nextButton.style.display = 'none';
+      
 
             if(submitButton){
                 submitButton.style.display = 'block';
@@ -88,26 +86,9 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`フレーズ ${currentPhraseIndex + 1} を表示: "${currentPhraseData.text}"`);
     }
 
-    // ----------------------------------------------------------------
-    // 3. 初期処理: ページ読み込み時に最初のフレーズを表示
-    // ----------------------------------------------------------------
-    displayCurrentPhrase();
 
-    // ----------------------------------------------------------------
-    // 4. (デバッグ用) 次のフレーズへ進むボタンの追加とイベントリスナー
-    // ----------------------------------------------------------------
-    // 実際にはタイピング完了時や音声再生完了時に進むが、
-    // まずは手動で動作を確認するためのボタン
-    const nextPhraseButton = document.createElement('button');
-    nextPhraseButton.textContent = '次のフレーズを表示';
-    // ボタンを phrasesDisplayContainer の直後に挿入
-    phrasesDisplayContainer.parentNode.insertBefore(nextPhraseButton, phrasesDisplayContainer.nextSibling);
 
-    // ボタンがクリックされたら
-    nextPhraseButton.addEventListener('click', () => {
-        currentPhraseIndex++; // 次のフレーズのインデックスに更新
-        displayCurrentPhrase(); // 新しいフレーズを表示
-    });
+
 
     // ----------------------------------------------------------------
     // 5. 音声プレーヤー終了時のイベントリスナー (★新規追加/メインの変更)
@@ -144,8 +125,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (phrasesDisplayContainer) phrasesDisplayContainer.style.display = 'block'; // フレーズ表示コンテナを表示する
         if (userInputFormContainer) userInputFormContainer.style.display = 'block'; // 入力フォームを表示する
         if (mainAudioPlayer) mainAudioPlayer.style.display = 'block'; // 音声プレーヤーを表示する
-        if (nextPhraseButton) nextPhraseButton.style.display = 'inline-block'; // デバッグボタンも表示
-
+        
         displayCurrentPhrase(); // 最初のフレーズのテキストと音声を再生
 
         if (userInputArea) userInputArea.focus(); // 練習開始と同時に入力欄にフォーカスを当てる
@@ -158,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 7. 初回再生をキー入力で開始するためのイベントリスナー
     // ----------------------------------------------------------------
     function handleStartKey(event) {
-        if ((event.code === 'Space' || event.code === 'Enter') && !isPracticeStarted) {
+        if (((event.ctrlKey || event.metaKey) && event.code === 'Enter') && !isPracticeStarted) {
             event.preventDefault(); 
             console.log("練習をキー入力で開始します。");
             startPractice(); // 練習開始処理を呼び出す
