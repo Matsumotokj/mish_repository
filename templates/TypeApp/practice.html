@@ -15,7 +15,7 @@
         <button id="play-next-phrase" style="display: none;">次のフレーズ</button> {# デバッグ用、または手動再生用 #}
     </div>
 
-    {# ★追加: スタートを促すメッセージ #}
+
     <div id="start-message" style="text-align: center; margin-top: 50px;">
         <p style="font-size: 1.8em; font-weight: bold;">スペースキーまたはエンターキーを押して開始</p>
         <p style="font-size: 1.2em; color: #666;">（最初のフレーズが表示され、音声が再生されます）</p>
@@ -23,8 +23,11 @@
 
 
     {# 各フレーズのテキストを表示するコンテナ #}
-    <div id="phrases-display-container" data-phrases-json="{{ phrases_data_json }}" style="display: none;">
-        </div>
+    <div id="phrases-display-container" 
+        data-phrases-json="{{ phrases_data_json }}" 
+        data-playback-mode="{{ playback_mode }}"
+        style="display: none;">
+    </div>
 
 
     <hr>

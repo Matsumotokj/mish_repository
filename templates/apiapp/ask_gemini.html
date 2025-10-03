@@ -25,6 +25,15 @@
         <input type="number" name="speed" id="speed" value="{{ speed|default:1.0 }}" min="0.2" max="1.5" step="0.1"> 倍速
     </div>
 
+    <div style="margin-bottom: 20px;">
+        <p style="font-weight: bold;">再生モード</p>
+        <input type="radio" id="mode_auto" name="playback_mode" value="auto" {% if playback_mode == 'auto' or not playback_mode %}checked{% endif %}>
+        <label for="mode_auto">自動再生</label>
+        <br>
+        <input type="radio" id="mode_manual" name="playback_mode" value="manual" {% if playback_mode == 'manual' %}checked{% endif %}>
+        <label for="mode_manual">手動再生 (音声終了後、エンターキーで次へ)</label>
+    </div>
+
     <button type="submit" style="padding: 10px 20px; font-size: 1.1em;">練習問題を作成する</button>
 </form>
 

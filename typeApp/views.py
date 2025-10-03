@@ -36,6 +36,8 @@ class PracticeView(View):
 
         speaking_rate = request.session.pop('speaking_rate', "1.0")
 
+        playback_mode = request.session.get('playback_mode', 'auto')
+
         try:
             speaking_rate = float(speaking_rate)
         except (ValueError, TypeError):
@@ -92,6 +94,7 @@ class PracticeView(View):
             "user_prompt": user_prompt,
             "form": form,
             "phrases_data_json": json.dumps(audio_data_list),
+            "playback_mode": playback_mode,
         }
 
         return render(request, "typeApp/practice.html", context)
