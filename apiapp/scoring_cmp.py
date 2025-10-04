@@ -6,12 +6,25 @@ Minimal Typing Scoring Core (Python)
 - スコア: accuracy = (正規化後の出題長 - 編集距離) / 出題長 * 100
 - 付属: 赤字ハイライト（HTML / ANSI）
 
-使い方:
+使い方:/typeApp/viewsの時はこんな感じ？
     from scoring_core_min import grade, to_diff_html, to_diff_ansi
 
     r = grade(gold_text(正解文), typed_text（タイピング）)   # dict: accuracy(正答率), dist(ミス), len(元文の長さ), alignedA, alignedB(gold側とtyped側を1文字ずつ対応付けたリスト（足りない所は “∅”）), ops(ミスの種類)
     typed_html, gold_html = to_diff_html(r)   # Web表示
     typed_ansi, gold_ansi = to_diff_ansi(r)  # 端末表示用　　　　　（赤文字表示できる）
+    context = {
+                'mode': 'compare',
+                'user_input': user_input,
+                'correct_answer': correct_answer,
+                'accuracy': r['accuracy'],     # 0-100
+                'dist': r['dist'],             # 編集距離
+                'length': r['len'],            # 正規化後goldの長さ
+                'typed_html': typed_html,      # 差分（入力側）
+                'gold_html': gold_html,        # 差分（正解側）
+                'ops': r['ops'],               # ["M","S","I","D","T"...]
+            }
+
+        return render(request, "typeApp/result.html", context)
 """
 
 from __future__ import annotations
@@ -205,4 +218,5 @@ def to_diff_ansi(result: Dict[str, object]) -> Tuple[str, str]:
     return ("".join(typed_parts), "".join(gold_parts))
 
 __all__ = ["normalize_ja", "align_damerau", "grade", "to_diff_html", "to_diff_ansi"]
+
 
