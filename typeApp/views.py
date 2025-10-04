@@ -8,10 +8,11 @@ from zoneinfo import ZoneInfo
 from .forms import TranscriptionForm
 
 from apiapp.apiapp import get_gemini_scoring
+from scoring_cmp import grade, to_diff_html, to_diff_ansi
 
 import uuid
 import os
-from django.conf import settings
+from django.conf import settings 
 
 from apiapp.tts import generate_mp3_from_text, split_text_by_punctuation 
 
