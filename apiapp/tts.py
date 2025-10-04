@@ -12,6 +12,19 @@ from google.cloud import texttospeech
 
 from dotenv import load_dotenv
 
+
+import cloudinary
+import cloudinary.uploader
+import io
+
+# --- Cloudinaryの設定 ---
+cloudinary.config(
+  cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME"),
+  api_key = os.getenv("CLOUDINARY_API_KEY"),
+  api_secret = os.getenv("CLOUDINARY_API_SECRET"),
+  secure = True
+)
+
 # Audio Playback (再生)
 # from pydub import AudioSegment
 # import simpleaudio as sa
@@ -29,7 +42,7 @@ except Exception as e:
     print("GOOGLE_APPLICATION_CREDENTIALSが正しく設定されているか確認してください。")
     tts_client = None
 
-def generate_mp3_from_text(text: str, filename: str, output_dir: str, speaking_rate=1.0) -> str:
+def generate_mp3_from_text(text: str, public_id: str, speaking_rate=1.0) -> str:
     """
     指定されたテキストからMP3音声を生成し、指定されたディレクトリに保存する関数。
     """
@@ -63,14 +76,28 @@ def generate_mp3_from_text(text: str, filename: str, output_dir: str, speaking_r
         )
 
         # ファイルのフルパスを構築
-        file_path = os.path.join(output_dir, filename)
+        # file_path = os.path.join(output_dir, filename)
 
-        # 取得した音声データ（バイナリ）をファイルに書き込む
-        with open(file_path, "wb") as out:
-            out.write(response.audio_content)
+        # # 取得した音声データ（バイナリ）をファイルに書き込む
+        # with open(file_path, "wb") as out:
+        #     out.write(response.audio_content)
         
-        print(f"Google TTSで音声ファイルを生成しました: {file_path}")
-        return filename # 成功したらファイル名を返す
+        # print(f"Google TTSで音声ファイルを生成しました: {file_path}")
+        # return filename # 成功したらファイル名を返す
+
+        # 2. メモリ上の音声データをCloudinaryにアップロード
+        # Cloudinaryでは音声ファイルは"video"リソースとして扱われる
+        upload_result = cloudinary.uploader.upload(
+            io.BytesIO(response.audio_content),
+            resource_type="video",
+            public_id=public_id,
+            folder="typing_app_audio/" # Cloudinary上のフォルダを指定
+        )
+
+        # 3. アップロードされたファイルのセキュアなURLを返す
+        secure_url = upload_result.get('secure_url')
+        print(f"Cloudinaryに音声ファイルをアップロードしました: {secure_url}")
+        return secure_url
 
     except Exception as e:
         print(f"Google TTSでエラーが発生しました: {e}")

@@ -49,7 +49,7 @@ class PracticeView(View):
         # 音声ファイルパスとテキストのペアを格納するリスト
         audio_data_list = []
         # 削除対象のファイル名（フルパス）を格納するリスト
-        files_to_delete = []
+        # files_to_delete = []
 
         for i, phrase_text in enumerate(phrases):
             if not phrase_text.strip():
@@ -57,21 +57,20 @@ class PracticeView(View):
                 continue
             
             #ユニークな音声ファイル名を作成audio_1とかにpart付けされる
-            audio_filename = f"audio_{uuid.uuid4().hex}_{i}.mp3"
+            public_id = f"audio_{uuid.uuid4().hex}_{i}.mp3"
             # audio_filename = f"audio_sample_{i}.mp3"
             # returned_filename = audio_filename
 
-            returned_filename = generate_mp3_from_text(phrase_text, audio_filename, settings.MEDIA_ROOT, speaking_rate)
+            audio_url = generate_mp3_from_text(phrase_text, public_id, speaking_rate)
             
-            if returned_filename:
-                audio_url = os.path.join(settings.MEDIA_URL, returned_filename)
+            if audio_url:
                 audio_data_list.append({
                     'id': f'phrase-{i}', # 各フレーズにユニークなIDを付与
                     'text': phrase_text,
                     'audio_url': audio_url
                 })
                 # 削除のためにファイルのフルパスを保存
-                files_to_delete.append(os.path.join(settings.MEDIA_ROOT, returned_filename))
+                # files_to_delete.append(os.path.join(settings.MEDIA_ROOT, returned_filename))
             else:
                 # 音声生成失敗時は、そのフレーズをスキップするか、エラー表示を検討
                 print(f"フレーズ '{phrase_text}' の音声生成に失敗しました。")
@@ -83,7 +82,7 @@ class PracticeView(View):
                 # })
 
         # ★★★ 生成した音声ファイルのフルパスリストをセッションに保存 ★★★
-        request.session['temp_audio_files_to_delete'] = files_to_delete
+        # request.session['temp_audio_files_to_delete'] = files_to_delete
         # ★★★ テンプレートに渡すデータも変更 ★★★
         request.session['phrases_data'] = audio_data_list # JSが利用するためにセッションにも保存
         
@@ -115,17 +114,17 @@ class ResultView(View):
         # print(user_input)
 
         # ★★★ 一時的に作成した今回の音声ファイルの削除 (リストで処理) ★★★
-        temp_audio_full_paths = request.session.pop('temp_audio_files_to_delete', []) # popで取得後セッションから削除
+        # temp_audio_full_paths = request.session.pop('temp_audio_files_to_delete', []) # popで取得後セッションから削除
 
-        for file_path in temp_audio_full_paths:
-            if os.path.exists(file_path):
-                try:
-                    os.remove(file_path)
-                    print(f"一時音声ファイルを削除しました: {file_path}")
-                except OSError as e:
-                    print(f"一時音声ファイルの削除に失敗しました {file_path}: {e}")
-            else:
-                print(f"警告: 削除対象のファイルが見つかりませんでした: {file_path}")
+        # for file_path in temp_audio_full_paths:
+        #     if os.path.exists(file_path):
+        #         try:
+        #             os.remove(file_path)
+        #             print(f"一時音声ファイルを削除しました: {file_path}")
+        #         except OSError as e:
+        #             print(f"一時音声ファイルの削除に失敗しました {file_path}: {e}")
+        #     else:
+        #         print(f"警告: 削除対象のファイルが見つかりませんでした: {file_path}")
 
 
         # ★★★ セッションから正解データを取得 ★★★
