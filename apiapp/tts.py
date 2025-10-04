@@ -37,7 +37,7 @@ cloudinary.config(
 # client = texttospeech.TextToSpeechClient()
 load_dotenv()
 
-google_creds_json_str = os.environ.get('GOOGLE_CREDENTIALS_JSON')
+google_creds_json_str = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
 tts_client = None
 
 # try:
