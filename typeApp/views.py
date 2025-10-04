@@ -141,7 +141,7 @@ class ResultView(View):
             'user_input': user_input,
             'correct_answer': correct_answer,
             'score': scoring_result.get('score'),
-            'advice': scoring_result.get('advice'),
+            'advice': scoring_result.get('reasons'),
         }
 
 
