@@ -17,6 +17,9 @@ import cloudinary
 import cloudinary.uploader
 import io
 
+from google.oauth2 import service_account # これを追加
+import json
+
 # --- Cloudinaryの設定 ---
 cloudinary.config(
   cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME"),
@@ -34,13 +37,37 @@ cloudinary.config(
 # client = texttospeech.TextToSpeechClient()
 load_dotenv()
 
-try:
-    tts_client = texttospeech.TextToSpeechClient()
-    print("Google Cloud TTSクライアントが正常に初期化されました。")
-except Exception as e:
-    print(f"警告: Google Cloud TTSクライアントの初期化に失敗しました: {e}")
-    print("GOOGLE_APPLICATION_CREDENTIALSが正しく設定されているか確認してください。")
-    tts_client = None
+google_creds_json_str = os.environ.get('GOOGLE_CREDENTIALS_JSON')
+tts_client = None
+
+# try:
+#     tts_client = texttospeech.TextToSpeechClient()
+#     print("Google Cloud TTSクライアントが正常に初期化されました。")
+# except Exception as e:
+#     print(f"警告: Google Cloud TTSクライアントの初期化に失敗しました: {e}")
+#     print("GOOGLE_APPLICATION_CREDENTIALSが正しく設定されているか確認してください。")
+#     tts_client = None
+
+if google_creds_json_str:
+    # ケース1: Render環境など、環境変数にJSONの中身が直接設定されている場合
+    try:
+        credentials_info = json.loads(google_creds_json_str)
+        credentials = service_account.Credentials.from_service_account_info(credentials_info)
+        tts_client = texttospeech.TextToSpeechClient(credentials=credentials)
+        print("Google Cloud TTSクライアントの初期化に成功しました (from env var)。")
+    except Exception as e:
+        print(f"警告: 環境変数からのTTSクライアント初期化に失敗しました: {e}")
+else:
+    # ケース2: ローカル環境など、ファイルパスで認証する場合
+    print("GOOGLE_CREDENTIALS_JSONが見つからないため、ファイルパスでの認証を試みます。")
+    try:
+        # この方法は GOOGLE_APPLICATION_CREDENTIALS 環境変数（ファイルパス）を使用します
+        tts_client = texttospeech.TextToSpeechClient()
+        print("Google Cloud TTSクライアントの初期化に成功しました (from file path)。")
+    except Exception as e:
+        print(f"警告: ファイルパスからのTTSクライアント初期化に失敗しました: {e}")
+
+        
 
 def generate_mp3_from_text(text: str, public_id: str, speaking_rate=1.0) -> str:
     """
