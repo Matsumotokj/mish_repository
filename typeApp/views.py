@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 from .forms import TranscriptionForm
 
 from apiapp.apiapp import get_gemini_scoring
-from scoring_cmp import grade, to_diff_html, to_diff_ansi
+# from scoring_cmp import grade, to_diff_html, to_diff_ansi
 
 import uuid
 import os
