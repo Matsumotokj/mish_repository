@@ -18,6 +18,8 @@ class AskGeminiView(View):
 
         playback_mode = request.POST.get('playback_mode', 'auto')
 
+        is_summary = request.POST.get('is_summary', 'False')
+
 
         try:
             length = int(length_str)
@@ -25,11 +27,11 @@ class AskGeminiView(View):
             length = 300 # 変換に失敗した場合はデフォルト値の300を設定
         
         # # Gemini APIから応答を取得
-        # gemini_answer = get_gemini_response(
-        #     content=content,
-        #     length_request=length,
-        #     info=info
-        # )
+        gemini_answer = get_gemini_response(
+            content=content,
+            length_request=length,
+            info=info
+        )
 
         
         # gemini_answer = "この文を入力してください。きっちょう"
@@ -38,7 +40,7 @@ class AskGeminiView(View):
 
         # gemini_answer = "文章1だよ。文章2だよ。"
 
-        gemini_answer = f'''この速さで再生されます'''
+        # gemini_answer = f'''この速さで再生されます'''
 
 
         # ★★★ 取得した答えをセッションに保存 ★★★
@@ -53,6 +55,8 @@ class AskGeminiView(View):
 
         # ★★★ 再生モードもセッションに保存 ★★★
         request.session['playback_mode'] = playback_mode
+
+        request.session['is_summary']  =is_summary
 
         return redirect('typeApp:practice')
 

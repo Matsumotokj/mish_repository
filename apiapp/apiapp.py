@@ -93,10 +93,196 @@ def get_gemini_response(content: str = "会社説明会で話されるような�
         print(f"文章生成中にエラーが発生しました: {e}")
         return "エラーのため文章を生成できませんでした。"
 
-# ====== 採点SYSTEM（厳しめ・平均≈80）とヘルパ ======
+# # ====== 採点SYSTEM（厳しめ・平均≈80）とヘルパ ======
+# SYSTEM = """あなたは日本語の要約採点者です。評価は厳格に行います。
+# 評価軸と配点（合計100点）:
+# - 忠実性(50): 元文にない主張・数値・固有名詞を付け足していないこと。1つでも明確な幻覚があれば0点。
+# - 網羅性(35): 元文の重要点のカバー率。主要論点の取りこぼしがあれば大きく減点。
+# - 明瞭・簡潔(15): 冗長表現や曖昧さが少なく、簡潔にまとまっているか。
+
+# 採点分布の目安（重要）:
+# - 平均は80点前後。100点は稀。
+# - 多少うまく書けていても、忠実性か網羅性に欠ければ70点未満とする。
+
+# 出力は必ず次のJSONのみ:
+# {
+#   "score_raw": 0..100 の整数,
+#   "subscores": { "faithfulness":0..50, "coverage":0..35, "clarity":0..15 },
+#   "hallucination": true/false,
+#   "notes": "80字以内の日本語の根拠",
+#   "best_summary": "120字以内の模範要約（忠実・網羅・簡潔を満たす）"
+# }
+# 注意:
+# - best_summary は元文の事実に厳密に従うこと（捏造禁止）。
+# - 字数上限を超えないこと。
+# """
+
+# def _truncate(s: str, n: int) -> str:
+#     s = (s or "").strip()
+#     return s if len(s) <= n else s[:n]
+
+# def _strip_fences(text: str) -> str:
+#     if not isinstance(text, str): return ""
+#     t = text.strip()
+#     t = re.sub(r"^```(\w+)?", "", t)
+#     t = re.sub(r"```$", "", t)
+#     return t.strip()
+
+# def _call_gemini_json(user_prompt: str):
+#     """JSONのみを返す呼び出し。429なら一度だけ待って再試行。"""
+#     def _once():
+#         return model.generate_content(
+#             [{"role": "user", "parts": [SYSTEM + "\n\n" + user_prompt]}],
+#             generation_config={
+#                 "response_mime_type": "application/json",
+#                 "temperature": 0,
+#             },
+#         )
+#     try:
+#         return _once()
+#     except Exception as e:
+#         msg = str(e)
+#         if "429" in msg:
+#             m = re.search(r"retry in ([0-9.]+)s", msg.lower())
+#             wait = float(m.group(1)) if m else 3.0
+#             time.sleep(min(wait, 5.0))
+#             return _once()
+#         raise
+
+# def _validate_schema(d: dict):
+#     if not isinstance(d, dict):
+#         raise ValueError("not a JSON object")
+#     if "score_raw" not in d or "subscores" not in d or "hallucination" not in d:
+#         raise ValueError("required fields missing")
+#     raw = d["score_raw"]
+#     if not isinstance(raw, (int, float)):
+#         raise ValueError("score_raw must be number")
+#     ss = d["subscores"] or {}
+#     f = ss.get("faithfulness", 0)
+#     c = ss.get("coverage", 0)
+#     cl = ss.get("clarity", 0)
+#     if not (0 <= float(f) <= 50 and 0 <= float(c) <= 35 and 0 <= float(cl) <= 15):
+#         raise ValueError("subscores out of range")
+#     if not isinstance(d["hallucination"], (bool,)):
+#         raise ValueError("hallucination must be boolean")
+#     notes = d.get("notes", "")
+#     best_summary = d.get("best_summary", "")
+#     if isinstance(best_summary, str) and len(best_summary) > 160:
+#         best_summary = best_summary[:160]
+#     return int(raw), int(f), int(c), int(cl), bool(d["hallucination"]), str(notes or ""), str(best_summary or "")
+
+# def _gen_best_summary_from_source(source: str) -> str:
+#     """best_summary が欠けたら元文から生成（保険）。"""
+#     prompt = f"""次の文章を、事実に忠実に、120字以内で簡潔に要約してください。出力は本文のみ、引用符・箇条書き・コードフェンスなし。
+# # 文章
+# {source}
+# # 出力
+# 本文のみ"""
+#     try:
+#         resp = model.generate_content(
+#             [{"role": "user", "parts": [prompt]}],
+#             generation_config={"response_mime_type": "text/plain", "temperature": 0},
+#         )
+#         txt = _strip_fences(resp.text).replace("\n", " ").strip()
+#         return txt[:120]
+#     except Exception:
+#         return ""
+
+# def _postprocess(raw: int, hallu: bool, length_ratio: float, notes: str, subscores: dict, best_summary: str):
+#     """
+#     目標: 平均80。基本 raw を尊重。
+#     - 幻覚あり: 上限 cap=70
+#     - 長さペナルティ: 短すぎ/長すぎのみ控えめ減点
+#     - 減点なし＆幻覚なし → final=raw
+#     - 理由に自動で減点理由を追記
+#     """
+#     penalty = 0
+#     reasons = []
+
+#     if length_ratio < 0.15:
+#         penalty -= 10; reasons.append("要約が短すぎ(-10)")
+#     elif length_ratio < 0.25:
+#         penalty -= 5;  reasons.append("要約がやや短い(-5)")
+#     if length_ratio > 0.80:
+#         penalty -= 10; reasons.append("要約が長すぎ(-10)")
+#     elif length_ratio > 0.60:
+#         penalty -= 5;  reasons.append("要約がやや長い(-5)")
+
+#     base = int(round(raw))
+#     cap  = 70 if hallu else 100
+
+#     if penalty == 0 and not hallu:
+#         final = base
+#     else:
+#         final = max(0, min(cap, base + penalty))
+
+#     shown = (notes or "").strip()
+#     if reasons:
+#         shown = f"{shown + ('／' if shown else '')}{'・'.join(reasons)}"
+
+#     return {
+#         "score": final,
+#         "score_raw": base,
+#         "penalty": int(penalty),
+#         "hallucination": hallu,
+#         "subscores": {
+#             "faithfulness": int(subscores.get("faithfulness", 0)),
+#             "coverage": int(subscores.get("coverage", 0)),
+#             "clarity": int(subscores.get("clarity", 0)),
+#         },
+#         "reasons": shown,
+#         "best_summary": best_summary or ""
+#     }
+
+# def get_gemini_scoring(correct_answer: str, user_input: str):
+#     """
+#     戻り値例:
+#     {
+#       "score": 82, "score_raw": 84, "penalty": -2, "hallucination": false,
+#       "subscores": {"faithfulness":45,"coverage":28,"clarity":11},
+#       "reasons": "〇〇が不足／要約がやや長い(-5)",
+#       "best_summary": "……（120字以内の模範要約）"
+#     }
+#     """
+#     source  = _truncate(correct_answer, 2000)
+#     summary = _truncate(user_input, 800)
+#     if not source or not summary:
+#         return {"score": 0, "score_raw": 0, "penalty": 0, "hallucination": False,
+#                 "subscores": {"faithfulness":0,"coverage":0,"clarity":0},
+#                 "reasons": "入力不足", "best_summary": ""}
+
+#     user_prompt = f"""# 元文
+# {source}
+
+# # 要約
+# {summary}
+
+# # 指示
+# SYSTEMの評価基準に厳格に従い、指定JSONのみで出力してください。
+# 特に "best_summary" は120字以内で事実忠実・簡潔に。"""
+
+#     try:
+#         resp = _call_gemini_json(user_prompt)
+#         data = json.loads(resp.text)
+#         raw, f, c, cl, hallu, notes, best = _validate_schema(data)
+#         if not best:
+#             best = _gen_best_summary_from_source(source)
+#         length_ratio = len(summary) / max(1, len(source))
+#         return _postprocess(raw, hallu, length_ratio, notes,
+#                             {"faithfulness": f, "coverage": c, "clarity": cl},
+#                             best_summary=best)
+#     except Exception as e:
+#         return {"score": 0, "score_raw": 0, "penalty": 0, "hallucination": False,
+#                 "subscores": {"faithfulness":0,"coverage":0,"clarity":0},
+#                 "reasons": f"採点エラー: {e}", "best_summary": ""}
+
+
+
+
+# ==== SYSTEMプロンプト ====
 SYSTEM = """あなたは日本語の要約採点者です。評価は厳格に行います。
 評価軸と配点（合計100点）:
-- 忠実性(50): 元文にない主張・数値・固有名詞を付け足していないこと。1つでも明確な幻覚があれば0点。
+- 忠実性(50): 元文にない主張・数値・固有名詞を付け足していないこと。1つでも明確な付け足しがあれば0点。
 - 網羅性(35): 元文の重要点のカバー率。主要論点の取りこぼしがあれば大きく減点。
 - 明瞭・簡潔(15): 冗長表現や曖昧さが少なく、簡潔にまとまっているか。
 
@@ -109,17 +295,19 @@ SYSTEM = """あなたは日本語の要約採点者です。評価は厳格に�
   "score_raw": 0..100 の整数,
   "subscores": { "faithfulness":0..50, "coverage":0..35, "clarity":0..15 },
   "hallucination": true/false,
-  "notes": "80字以内の日本語の根拠",
+  "notes": "各配点軸ごとの点数と理由を簡潔に説明してください（例: 忠実性45/50: 数値誤記なし、固有名詞も正確。網羅性30/35: 主論点をほぼカバー）。80字以内",
   "best_summary": "120字以内の模範要約（忠実・網羅・簡潔を満たす）"
 }
 注意:
-- best_summary は元文の事実に厳密に従うこと（捏造禁止）。
-- 字数上限を超えないこと。
+- notes には各項目の点数とその根拠を簡潔に文章で書くこと
+- best_summary は元文の事実に厳密に従うこと（捏造禁止）
+- 字数上限を超えないこと
 """
 
-def _truncate(s: str, n: int) -> str:
+# ==== ユーティリティ ====
+def truncate(s: str, max_chars: int) -> str:
     s = (s or "").strip()
-    return s if len(s) <= n else s[:n]
+    return s if len(s) <= max_chars else s[:max_chars]
 
 def _strip_fences(text: str) -> str:
     if not isinstance(text, str): return ""
@@ -128,51 +316,26 @@ def _strip_fences(text: str) -> str:
     t = re.sub(r"```$", "", t)
     return t.strip()
 
-def _call_gemini_json(user_prompt: str):
-    """JSONのみを返す呼び出し。429なら一度だけ待って再試行。"""
-    def _once():
-        return model.generate_content(
-            [{"role": "user", "parts": [SYSTEM + "\n\n" + user_prompt]}],
-            generation_config={
-                "response_mime_type": "application/json",
-                "temperature": 0,
-            },
-        )
-    try:
-        return _once()
-    except Exception as e:
-        msg = str(e)
-        if "429" in msg:
-            m = re.search(r"retry in ([0-9.]+)s", msg.lower())
-            wait = float(m.group(1)) if m else 3.0
-            time.sleep(min(wait, 5.0))
-            return _once()
-        raise
+def call_gemini_json(user_prompt: str):
+    """JSONのみを返す generate_content"""
+    return model.generate_content(
+        [{"role": "user", "parts": [SYSTEM + "\n\n" + user_prompt]}],
+        generation_config={"response_mime_type": "application/json", "temperature": 0},
+    )
 
-def _validate_schema(d: dict):
-    if not isinstance(d, dict):
-        raise ValueError("not a JSON object")
-    if "score_raw" not in d or "subscores" not in d or "hallucination" not in d:
-        raise ValueError("required fields missing")
-    raw = d["score_raw"]
-    if not isinstance(raw, (int, float)):
-        raise ValueError("score_raw must be number")
-    ss = d["subscores"] or {}
-    f = ss.get("faithfulness", 0)
-    c = ss.get("coverage", 0)
-    cl = ss.get("clarity", 0)
-    if not (0 <= float(f) <= 50 and 0 <= float(c) <= 35 and 0 <= float(cl) <= 15):
-        raise ValueError("subscores out of range")
-    if not isinstance(d["hallucination"], (bool,)):
-        raise ValueError("hallucination must be boolean")
+def validate_schema(d: dict):
+    raw = int(d.get("score_raw", 0))
+    ss = d.get("subscores", {})
+    f = int(ss.get("faithfulness", 0))
+    c = int(ss.get("coverage", 0))
+    cl = int(ss.get("clarity", 0))
+    hallu = bool(d.get("hallucination", False))
     notes = d.get("notes", "")
     best_summary = d.get("best_summary", "")
-    if isinstance(best_summary, str) and len(best_summary) > 160:
-        best_summary = best_summary[:160]
-    return int(raw), int(f), int(c), int(cl), bool(d["hallucination"]), str(notes or ""), str(best_summary or "")
+    return raw, f, c, cl, hallu, notes, best_summary
 
-def _gen_best_summary_from_source(source: str) -> str:
-    """best_summary が欠けたら元文から生成（保険）。"""
+def gen_best_summary_from_source(source: str) -> str:
+    """best_summary 欠落時のフォールバック"""
     prompt = f"""次の文章を、事実に忠実に、120字以内で簡潔に要約してください。出力は本文のみ、引用符・箇条書き・コードフェンスなし。
 # 文章
 {source}
@@ -188,68 +351,60 @@ def _gen_best_summary_from_source(source: str) -> str:
     except Exception:
         return ""
 
-def _postprocess(raw: int, hallu: bool, length_ratio: float, notes: str, subscores: dict, best_summary: str):
-    """
-    目標: 平均80。基本 raw を尊重。
-    - 幻覚あり: 上限 cap=70
-    - 長さペナルティ: 短すぎ/長すぎのみ控えめ減点
-    - 減点なし＆幻覚なし → final=raw
-    - 理由に自動で減点理由を追記
-    """
+def postprocess(raw, hallu, length_ratio, notes, subscores, best_summary):
     penalty = 0
-    reasons = []
+    penalty_reasons = []
 
     if length_ratio < 0.15:
-        penalty -= 10; reasons.append("要約が短すぎ(-10)")
+        penalty -= 10; penalty_reasons.append("要約が短すぎ(-10)")
     elif length_ratio < 0.25:
-        penalty -= 5;  reasons.append("要約がやや短い(-5)")
+        penalty -= 5; penalty_reasons.append("要約がやや短い(-5)")
     if length_ratio > 0.80:
-        penalty -= 10; reasons.append("要約が長すぎ(-10)")
+        penalty -= 10; penalty_reasons.append("要約が長すぎ(-10)")
     elif length_ratio > 0.60:
-        penalty -= 5;  reasons.append("要約がやや長い(-5)")
+        penalty -= 5; penalty_reasons.append("要約がやや長い(-5)")
 
     base = int(round(raw))
-    cap  = 70 if hallu else 100
+    cap = 70 if hallu else 100
+    final = max(0, min(cap, base + penalty))
 
-    if penalty == 0 and not hallu:
-        final = base
-    else:
-        final = max(0, min(cap, base + penalty))
+    notes_full = notes.strip()
+    if penalty_reasons:
+        notes_full += " " + ", ".join(penalty_reasons)
 
-    shown = (notes or "").strip()
-    if reasons:
-        shown = f"{shown + ('／' if shown else '')}{'・'.join(reasons)}"
+    reasons_struct = {
+        "score_reasons": {
+            "faithfulness": f"忠実性: {subscores.get('faithfulness',0)}/50点",
+            "coverage": f"網羅性: {subscores.get('coverage',0)}/35点",
+            "clarity": f"明瞭性: {subscores.get('clarity',0)}/15点",
+        },
+        "auto_penalty": penalty_reasons
+    }
 
     return {
-        "score": final,
-        "score_raw": base,
-        "penalty": int(penalty),
-        "hallucination": hallu,
-        "subscores": {
-            "faithfulness": int(subscores.get("faithfulness", 0)),
-            "coverage": int(subscores.get("coverage", 0)),
-            "clarity": int(subscores.get("clarity", 0)),
-        },
-        "reasons": shown,
-        "best_summary": best_summary or ""
+    "score": final,
+    "score_raw": base,
+    "penalty": int(penalty),
+    "hallucination": hallu,
+    "subscores": {
+        "faithfulness": int(subscores.get("faithfulness", 0)),
+        "coverage": int(subscores.get("coverage", 0)),
+        "clarity": int(subscores.get("clarity", 0)),
+    },
+    "reasons": reasons_struct,
+    "best_summary": best_summary or "",
+    "notes": notes_full[:160]  # 文字数制限
     }
 
+
+# ==== メイン関数 ====
 def get_gemini_scoring(correct_answer: str, user_input: str):
-    """
-    戻り値例:
-    {
-      "score": 82, "score_raw": 84, "penalty": -2, "hallucination": false,
-      "subscores": {"faithfulness":45,"coverage":28,"clarity":11},
-      "reasons": "〇〇が不足／要約がやや長い(-5)",
-      "best_summary": "……（120字以内の模範要約）"
-    }
-    """
-    source  = _truncate(correct_answer, 2000)
-    summary = _truncate(user_input, 800)
+    source = truncate(correct_answer, 2000)
+    summary = truncate(user_input, 800)
     if not source or not summary:
         return {"score": 0, "score_raw": 0, "penalty": 0, "hallucination": False,
                 "subscores": {"faithfulness":0,"coverage":0,"clarity":0},
-                "reasons": "入力不足", "best_summary": ""}
+                "reasons": "入力不足", "best_summary": "", "notes": ""}
 
     user_prompt = f"""# 元文
 {source}
@@ -262,16 +417,25 @@ SYSTEMの評価基準に厳格に従い、指定JSONのみで出力してくだ�
 特に "best_summary" は120字以内で事実忠実・簡潔に。"""
 
     try:
-        resp = _call_gemini_json(user_prompt)
+        resp = call_gemini_json(user_prompt)
         data = json.loads(resp.text)
-        raw, f, c, cl, hallu, notes, best = _validate_schema(data)
+        raw, f, c, cl, hallu, notes_ai, best = validate_schema(data)
+
         if not best:
-            best = _gen_best_summary_from_source(source)
+            best = gen_best_summary_from_source(source)
+
         length_ratio = len(summary) / max(1, len(source))
-        return _postprocess(raw, hallu, length_ratio, notes,
-                            {"faithfulness": f, "coverage": c, "clarity": cl},
-                            best_summary=best)
+
+        out = postprocess(
+            raw=raw,
+            hallu=hallu,
+            length_ratio=length_ratio,
+            notes=notes_ai,
+            subscores={"faithfulness": f, "coverage": c, "clarity": cl},
+            best_summary=best
+        )
+        return out
     except Exception as e:
         return {"score": 0, "score_raw": 0, "penalty": 0, "hallucination": False,
                 "subscores": {"faithfulness":0,"coverage":0,"clarity":0},
-                "reasons": f"採点エラー: {e}", "best_summary": ""}
+                "reasons": f"採点エラー: {e}", "best_summary": "", "notes": ""}

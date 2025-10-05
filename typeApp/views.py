@@ -9,6 +9,7 @@ from .forms import TranscriptionForm
 
 from apiapp.apiapp import get_gemini_scoring
 # from scoring_cmp import grade, to_diff_html, to_diff_ansi
+from apiapp.scoring_cmp import grade, to_diff_html, to_diff_ansi
 
 import uuid
 import os
@@ -134,6 +135,51 @@ class ResultView(View):
         print("入力したテキスト：", user_input)
 
 
+        is_summary = request.session.pop('is_summary', False)
+
+        print("is_summary",is_summary)
+
+        is_summary = str(is_summary).lower() == 'is_summary'
+
+        print("is_summary",is_summary)
+
+        try:
+            is_summary = bool(is_summary)
+        except (ValueError, TypeError):
+            is_summary = False
+
+        print("is_summary",is_summary)
+
+        if is_summary:
+            scoring_result = get_gemini_scoring(correct_answer, user_input)
+
+            context = {
+                'user_summary': user_input,
+                'source_text': correct_answer,
+                'score': scoring_result.get('score'),
+                'advice': scoring_result.get('reasons'),
+                'best_summary': scoring_result.get('best_summary'),
+                'notes': scoring_result.get('notes'),
+            }
+            return render(request, "typeApp/result.html", context)
+        else:
+            r = grade(gold_raw=correct_answer, typed_raw=user_input)
+
+                # 2. to_diff_html関数で差分表示用のHTMLを生成
+            typed_html, gold_html = to_diff_html(r)
+
+            # テンプレートに渡すコンテキストを作成
+            context = {
+                'user_input': user_input,
+                'correct_answer': correct_answer,
+                'accuracy': r['accuracy'],      # 正答率 (0-100)
+                'dist': r['dist'],              # 編集距離
+                'length': r['len'],             # 正規化後の正解文の長さ
+                'typed_html': typed_html,       # 差分ハイライト付きの入力文
+                'gold_html': gold_html,         # 差分ハイライト付きの正解文
+            }
+            return render(request, "typeApp/result_uns.html", context)
+
 # 後で治す
 
         # scoring_result = get_gemini_scoring(correct_answer, user_input)
@@ -147,12 +193,12 @@ class ResultView(View):
 
 
 
-        context = {
-            'user_input': user_input,
-            'correct_answer': correct_answer,
-            'score': 0,
-            'advice': "仮のアドバイス",
-        }
+        # context = {
+        #     'user_input': user_input,
+        #     'correct_answer': correct_answer,
+        #     'score': 0,
+        #     'advice': "仮のアドバイス",
+        # }
 
 
 

@@ -1,0 +1,32 @@
+{% extends "base/type_base.html" %}
+
+{% block body %}
+<h1>採点結果</h1>
+
+<div class="result-summary">
+    <h2>スコア: <span class="score">{{ accuracy }}</span> 点</h2>
+    <p>正解率: {{ accuracy }}% / ミス数: {{ dist }} / 全長: {{ length }}</p>
+</div>
+
+<hr>
+
+<div class="result-diff">
+    <h3>詳細比較</h3>
+    <div class="diff-item">
+        <h4>あなたの入力:</h4>
+        <div class="diff-text">
+            {# ★★★ |safeフィルターが重要 ★★★ #}
+            {{ typed_html|safe }}
+        </div>
+    </div>
+    <div class="diff-item">
+        <h4>模範解答:</h4>
+        <div class="diff-text">
+            {# ★★★ |safeフィルターが重要 ★★★ #}
+            {{ gold_html|safe }}
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+

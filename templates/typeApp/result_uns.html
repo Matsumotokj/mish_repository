@@ -1,0 +1,55 @@
+{% extends "base/type_base.html" %}
+{% load static %}
+
+{% block extra_css %}
+  <style>
+    :root { --fg:#222; --muted:#777; --bg:#fff; --accent:#fff5bf; }
+    body { font-family: system-ui, "Noto Sans JP", sans-serif; color:var(--fg); background:var(--bg); margin:24px; }
+    h1 { margin:0 0 10px; }
+    .panel { border:1px solid #eee; border-radius:12px; padding:12px; background:#fafafa; margin-top: 24px; }
+    .kpis { margin: 16px 0; }
+    .kpis span { display:inline-block; border:1px solid #eee; border-radius:8px; padding:6px 10px; margin-right:8px; background-color: #fdfdfd; }
+    .gold, .typed { font-size:18px; line-height:1.9; white-space:pre-wrap; word-break:break-word; }
+    .gold .err, .typed .err { color:#c00; font-weight:700; text-decoration: underline; background-color: #fff0f0; }
+    .gold .ok,  .typed .ok  { color:inherit; }
+    .placeholder { color:#c00; border:1px solid #c00; padding:0 3px; border-radius:4px; font-weight: 700; }
+    .label { font-weight:700; margin:12px 0 4px; }
+    code { background:#f2f2f2; padding:2px 6px; border-radius:6px; }
+  </style>
+{% endblock %}
+
+{% block body %}
+  <h1>採点結果</h1>
+
+  <div class="kpis">
+    <span>正答率: <b>{{ accuracy }}</b>%</span>
+    <span>編集距離(dist): <b>{{ dist }}</b></span>
+    <span>出題文字数: <b>{{ length }}</b></span>
+  </div>
+
+  <div class="panel">
+    <div class="label">あなたの入力（<span style="color:#c00;font-weight:700;">赤=誤り</span>）</div>
+    <div class="typed">
+      {# views.pyから渡されたHTMLをそのまま描画するため |safe フィルターが必須 #}
+      {{ typed_html|safe }}
+    </div>
+    
+    <div class="label" style="margin-top:14px;">正解文（<span style="color:#c00;font-weight:700;">赤=入力での欠落/不一致箇所</span>）</div>
+    <div class="gold">
+      {{ gold_html|safe }}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="label">正解文（原文）</div>
+    <div class="gold" style="font-size: 16px; line-height: 1.7;">{{ correct_answer }}</div>
+    
+    <div class="label" style="margin-top:14px;">あなたの入力（原文）</div>
+    <div class="typed" style="font-size: 16px; line-height: 1.7;">{{ user_input }}</div>
+  </div>
+
+{% endblock %}
+
+{% block extra_js %}
+  {# 採点機構を削除したため、このブロックは空になります #}
+{% endblock %}
