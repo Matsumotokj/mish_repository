@@ -1,4 +1,5 @@
 {% extends "base/type_base.html" %}
+{% load static %}
 {% block body %}
 
 <h1>Geminiが問題を作成するページ</h1>
@@ -22,7 +23,9 @@
 
     <div style="margin-bottom: 15px;">
         <label for="speed" style="font-weight: bold;">読み上げ速度</label><br>
-        <input type="number" name="speed" id="speed" value="{{ speed|default:1.0 }}" min="0.2" max="1.5" step="0.1"> 倍速
+        <input type="number" name="speed" id="speed" value="{{ speed|default:1.0 }}" min="0.3" max="1.5" step="0.1"> 倍速
+
+        <small id="speed-status" style="margin-left: 10px; color: #666;"></small>
     </div>
 
     <div style="margin-bottom: 20px;">
@@ -37,8 +40,59 @@
     <button type="submit" style="padding: 10px 20px; font-size: 1.1em;">練習問題を作成する</button>
 </form>
 
+{# ★★★ srcが空のオーディオプレーヤーを用意 ★★★ #}
+<audio id="sample-audio-player" style="display: none;"></audio>
+
+{% endblock %}
 
 
 
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const speedInput = document.getElementById('speed');
+    const sampleAudioPlayer = document.getElementById('sample-audio-player');
+    const speedStatus = document.getElementById('speed-status');
+    
+    // ★★★ 音声ファイルが置かれているディレクトリのベースURLをDjangoから受け取る ★★★
+    const audioBaseUrl = "{% static 'apiapp/audio/' %}";
+    
+    let debounceTimer;
 
+    speedInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        if (speedStatus) speedStatus.textContent = 'プレビュー再生準備中...';
+
+        debounceTimer = setTimeout(() => {
+            const speed = parseFloat(speedInput.value).toFixed(1); // 小数点以下1桁に整形
+
+            if (isNaN(speed) || speed < 0.8 || speed > 1.5) {
+                if (speedStatus) speedStatus.textContent = '無効な速度です';
+                return;
+            }
+
+            if (speedStatus) speedStatus.textContent = 'プレビュー再生中...';
+
+            // ★★★ 速度の値からファイル名を組み立てる ★★★
+            // 例: 1.0 -> '1_0', 0.8 -> '0_8'
+            const speedFileNamePart = speed.toString().replace('.', '');
+            const audioFileName = `audio${speedFileNamePart}.mp3`;
+            const audioUrl = audioBaseUrl + audioFileName;
+
+            // ★★★ 組み立てたURLをsrcに設定して再生 ★★★
+            sampleAudioPlayer.src = audioUrl;
+            sampleAudioPlayer.load();
+            sampleAudioPlayer.play().catch(error => {
+                console.error("Audio playback failed:", error);
+                if (speedStatus) speedStatus.textContent = '音声ファイルの読み込みに失敗';
+            });
+
+        }, 300);
+    });
+
+    sampleAudioPlayer.addEventListener('ended', function() {
+        if (speedStatus) speedStatus.textContent = '';
+    });
+});
+</script>
 {% endblock %}

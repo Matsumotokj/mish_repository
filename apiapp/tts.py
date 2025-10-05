@@ -37,8 +37,29 @@ cloudinary.config(
 # client = texttospeech.TextToSpeechClient()
 load_dotenv()
 
+
+google_creds_json_str = None
+
 google_creds_json_str = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
 tts_client = None
+
+
+# 2. Render用が見つからなければ、ローカル用の環境変数（ファイルパス）を探す
+if not google_creds_json_str:
+    # .env からファイル"パス"を取得
+    local_credentials_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS_PATH')
+    
+    if local_credentials_path:
+        try:
+            # ここが最も重要な部分です
+            # 取得したパスを使ってファイルを開き、中身を読み込む
+            with open(local_credentials_path, 'r', encoding='utf-8') as f:
+                google_creds_json_str = f.read()
+
+        except FileNotFoundError:
+            print(f"警告: .envで指定されたファイルが見つかりません: {local_credentials_path}")
+        except Exception as e:
+            print(f"警告: 認証ファイルの読み込み中にエラーが発生しました: {e}")
 
 # try:
 #     tts_client = texttospeech.TextToSpeechClient()
