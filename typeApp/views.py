@@ -134,24 +134,25 @@ class ResultView(View):
         print("入力したテキスト：", user_input)
 
 
+# 後で治す
 
-        scoring_result = get_gemini_scoring(correct_answer, user_input)
-
-        context = {
-            'user_input': user_input,
-            'correct_answer': correct_answer,
-            'score': scoring_result.get('score'),
-            'advice': scoring_result.get('reasons'),
-        }
-
-
+        # scoring_result = get_gemini_scoring(correct_answer, user_input)
 
         # context = {
         #     'user_input': user_input,
         #     'correct_answer': correct_answer,
-        #     'score': 0,
-        #     'advice': "仮のアドバイス",
+        #     'score': scoring_result.get('score'),
+        #     'advice': scoring_result.get('reasons'),
         # }
+
+
+
+        context = {
+            'user_input': user_input,
+            'correct_answer': correct_answer,
+            'score': 0,
+            'advice': "仮のアドバイス",
+        }
 
 
 
