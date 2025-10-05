@@ -20,23 +20,24 @@ class AskGeminiView(View):
 
         is_summary = request.POST.get('is_summary', 'False')
 
-
         try:
             length = int(length_str)
         except (ValueError, TypeError):
             length = 300 # 変換に失敗した場合はデフォルト値の300を設定
         
         # # Gemini APIから応答を取得
-        gemini_answer = get_gemini_response(
-            content=content,
-            length_request=length,
-            info=info
-        )
+        # gemini_answer = get_gemini_response(
+        #     content=content,
+        #     length_request=length,
+        #     info=info
+        # )
 
         
         # gemini_answer = "この文を入力してください。きっちょう"
 
         # gemini_answer = f'''皆様、日々の生活で「もっとこうだったら良いのに」と感じる瞬間はありませんか？そのお悩みを、この新商品「スマートアシスト」が解決します。これ一つで、あなたの日常がもっと快適で豊かに。ぜひ、この感動を体験してください。'''
+
+        gemini_answer  =f'''ハッカソンで開発したのは、音声認識を活用し自動で議事録を作成するツールです。会議の効率化に貢献します。'''
 
         # gemini_answer = "文章1だよ。文章2だよ。"
 
@@ -57,6 +58,8 @@ class AskGeminiView(View):
         request.session['playback_mode'] = playback_mode
 
         request.session['is_summary']  =is_summary
+
+
 
         return redirect('typeApp:practice')
 

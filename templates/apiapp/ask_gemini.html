@@ -176,9 +176,10 @@
 
     <div style="margin-bottom: 20px;">
         <p style="font-weight: bold;">採点モード</p>
-        <input type="radio" id="is_summary" name="is_summary" value="is_summary" {% if playback_mode == 'is_summary' %}checked{% endif %}>
+        <input type="radio" id="is_summary" name="is_summary" value="is_summary" {% if is_summary == 'is_summary' %}checked{% endif %}>
         <label for="is_summary">要約モード</label>
     </div>
+
 
     <button type="submit" style="padding: 10px 20px; font-size: 1.1em;">練習問題を作成する</button>
 </form>
