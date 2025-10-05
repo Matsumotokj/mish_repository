@@ -1,8 +1,145 @@
 {% extends "base/type_base.html" %}
 {% load static %}
+
+{% block extra_css %}
+<style>
+    /* === 変数定義 === */
+    :root {
+        --primary-color: #007bff;
+        --bg-color: #f4f7f9;
+        --card-bg-color: #ffffff;
+        --text-primary: #212529;
+        --text-secondary: #6c757d;
+        --border-color: #ced4da;
+        --focus-ring-color: rgba(0, 123, 255, 0.25);
+    }
+
+    /* === 基本スタイル === */
+    body {
+        background-color: var(--bg-color);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    /* === フォームコンテナ === */
+    .form-container {
+        max-width: 600px;
+        margin: 40px auto;
+        padding: 30px;
+        background-color: var(--card-bg-color);
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    .form-container h1 {
+        text-align: center;
+        color: var(--text-primary);
+        margin-bottom: 30px;
+    }
+
+    /* === フォーム要素グループ === */
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-label {
+        display: block;
+        font-weight: bold;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    /* === テキストエリア & 入力欄 === */
+    textarea,
+    input[type="number"] {
+        width: 100%;
+        padding: 10px 12px;
+        font-size: 1rem;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        box-sizing: border-box; /* paddingを含めた幅計算 */
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    textarea:focus,
+    input[type="number"]:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 4px var(--focus-ring-color);
+    }
+
+    /* === ラジオボタンのカスタムスタイル === */
+    .radio-group .radio-option {
+        display: flex;
+        align-items: center;
+        background-color: #fdfdfd;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: border-color 0.2s, background-color 0.2s;
+    }
+    .radio-group .radio-option:hover {
+        border-color: var(--primary-color);
+    }
+    .radio-group input[type="radio"] {
+        display: none; /* 元のラジオボタンを非表示に */
+    }
+    .radio-group .radio-option label {
+        flex-grow: 1;
+        cursor: pointer;
+    }
+    /* カスタムラジオボタンの円を作成 */
+    .radio-group .radio-option label::before {
+        content: '';
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        border: 2px solid var(--border-color);
+        border-radius: 50%;
+        margin-right: 12px;
+        vertical-align: middle;
+        transition: border-color 0.2s, background-color 0.2s;
+    }
+    /* 選択された時の円のスタイル */
+    .radio-group input[type="radio"]:checked + label::before {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        background-clip: content-box; /* 内側に色を付ける */
+        padding: 3px;
+    }
+    .radio-group input[type="radio"]:checked + label {
+        font-weight: bold;
+    }
+
+
+    /* === 送信ボタン === */
+    button[type="submit"] {
+        width: 100%;
+        padding: 12px 20px;
+        font-size: 1.1em;
+        font-weight: bold;
+        color: #fff;
+        background-color: var(--primary-color);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    button[type="submit"]:hover {
+        background-color: #0056b3;
+    }
+
+    /* === ヘルパーテキスト === */
+    #speed-status {
+        display: inline-block;
+        margin-left: 10px;
+        color: var(--text-secondary);
+        font-size: 0.9em;
+    }
+</style>
+{% endblock %}
+
 {% block body %}
 
-<h1>Geminiが問題を作成するページ</h1>
+<h1>作問依頼ページ</h1>
 
 <form method="POST" id="generation-form">
     {% csrf_token %}
