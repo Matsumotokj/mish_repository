@@ -7,6 +7,8 @@
 ハッカソンのチーム開発作品（2025年10月・約1週間）。
 本リポジトリは、就職活動のポートフォリオとして整備したものです。
 
+**AWS 版**: このアプリを、AWS のサーバーレス構成（Bedrock・Polly・Lambda・DynamoDB・CloudFront）で一人で作り直しました → [Matsumotokj/shoki-master](https://github.com/Matsumotokj/shoki-master)
+
 ---
 
 ## 🎯 解決したい課題
